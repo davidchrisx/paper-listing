@@ -35,3 +35,7 @@ type Record struct {
 	// Direksi
 	Direction string `json:"direction" bson:"direction"`
 }
+
+type Records struct {
+	Records []*Record `json:"records"`
+}

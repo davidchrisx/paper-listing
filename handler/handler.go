@@ -8,6 +8,7 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
 
 	pl "github.com/davidchrisx/paper-listing"
 	"github.com/davidchrisx/paper-listing/model"
@@ -21,12 +22,21 @@ type Handler struct {
 func New(service *pl.Service) *Handler {
 	router := httprouter.New()
 	handler := &Handler{service: service}
+	router.GET("/", handler.Index)
 	router.POST("/listing", handler.Create)
 	router.DELETE("/listing/:id", handler.Delete)
-	router.GET("/listing/find/:address", handler.Find)
+	router.GET("/find/:address", handler.Find)
 	router.GET("/listing", handler.GetAll)
 	router.GET("/count", handler.Count)
-	handler.Router = router
+	c := cors.New(cors.Options{
+		AllowedMethods: []string{"GET","POST", "DELETE", "PUT", "OPTIONS"},
+		AllowedOrigins: []string{"*"},
+		AllowCredentials: true,
+		AllowedHeaders: []string{"Content-Type","Bearer","Bearer ","content-type","Origin","Accept"},
+		OptionsPassthrough: true,
+	})
+	corsrouter := c.Handler(router)
+	handler.Router = corsrouter
 	return handler
 }
 
@@ -69,7 +79,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request, params httprout
 		return
 	}
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(records)
+	json.NewEncoder(w).Encode(model.Records{records})
 
 }
 
@@ -93,4 +103,8 @@ func (h *Handler) Count(w http.ResponseWriter, r *http.Request, params httproute
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(fmt.Sprintf("%d", count)))
+}
+
+func (h *Handler) Index(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	w.Write([]byte(fmt.Sprintf("ok")))
 }
